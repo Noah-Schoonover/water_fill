@@ -13,6 +13,9 @@ static const int SLEEP_CHECK_SENSOR_INTERVAL_MILLIS = 20000;  // how often to ch
 static const int FILL_CHECK_SENSOR_INTERVAL_MILLIS = 1000;    // how often to check sensor while filling
 static const int MAX_FILL_ERROR_MILLIS = 30000;               // how long to fill before going to error mode
 
+//--------------------------------------------------------------------------------------------------------------------------
+// this method is called automatically by arduino before running loop()
+//
 void setup() {
 
   Serial.begin(9600);
@@ -25,10 +28,42 @@ void setup() {
 
 }
 
-// this infinite loop will get called if the FILL_TIME_MAX_ERROR_MILLIS is reached
-// before the sensor detects water. reset/power cycle required to exit this loop
+//--------------------------------------------------------------------------------------------------------------------------
+//
+void enableWaterSensor() {
+  digitalWrite(WATER_SENSOR_POWER_PIN, HIGH);
+  delay(WATER_SENSOR_INIT_MILLIS); // wait for sensor to initialize/equalize
+}
+
+//--------------------------------------------------------------------------------------------------------------------------
+//
+void disableWaterSensor() {
+  digitalWrite(WATER_SENSOR_POWER_PIN, LOW);
+}
+
+//--------------------------------------------------------------------------------------------------------------------------
+// enables an LED along with the valve
+//
+void openWaterValve() {
+  digitalWrite(RED_LED, HIGH); // turn LED on
+  digitalWrite(VALVE_OUTPUT_PIN, HIGH); // open valve
+}
+
+//--------------------------------------------------------------------------------------------------------------------------
+// turns off the LED along with the valve
+//
+void closeWaterValve() {
+  digitalWrite(RED_LED, LOW); // turn LED off
+  digitalWrite(VALVE_OUTPUT_PIN, LOW); // close valve
+}
+
+//--------------------------------------------------------------------------------------------------------------------------
+// this infinite loop will get called if the FILL_TIME_MAX_ERROR_MILLIS is reached during fill
+// reset/power cycle required to exit this loop
 // the loop quickly cycles the power on the sensor to flash the sensor LED as an ERROR indicator
+//
 void doSystemErrorLoop() {
+  closeWaterValve();
   while(true) {
     delay(500);
     Serial.println("ERROR");
@@ -46,15 +81,9 @@ void doSystemErrorLoop() {
   }
 }
 
-void enableWaterSensor() {
-  digitalWrite(WATER_SENSOR_POWER_PIN, HIGH);  // turn the sensor ON
-  delay(WATER_SENSOR_INIT_MILLIS); // wait for sensor
-}
-
-void disableWaterSensor() {
-  digitalWrite(WATER_SENSOR_POWER_PIN, LOW);  // turn the sensor OFF
-}
-
+//--------------------------------------------------------------------------------------------------------------------------
+// helper method to write the sensor value after reading it
+//
 int readWaterSensor() {
   int value = analogRead(WATER_SENSOR_SIGNAL_PIN); // read the analog value from sensor
   Serial.print("Sensor value: "); // output sensor value
@@ -62,16 +91,10 @@ int readWaterSensor() {
   return value;
 }
 
-void openWaterValve() {
-  digitalWrite(RED_LED, HIGH); // turn LED on when filling 
-  digitalWrite(VALVE_OUTPUT_PIN, HIGH); // turn valve ON
-}
-
-void closeWaterValve() {
-  digitalWrite(RED_LED, LOW); // turn LED off
-  digitalWrite(VALVE_OUTPUT_PIN, LOW); // turn valve OFF
-}
-
+//--------------------------------------------------------------------------------------------------------------------------
+// continuously checks the water sensor value while filling
+// if the MAX_FILL_ERROR_MILLIS is reached during fill, the doSystemErrorLoop() method will be called
+//
 void doFill() {
 
   unsigned long startFillTime = millis();
@@ -87,9 +110,6 @@ void doFill() {
 
     if (time > startFillTime + MAX_FILL_ERROR_MILLIS) {
       Serial.println("ERROR - MAX FILL TIME REACHED.");
-      Serial.println(millis());
-      Serial.println(MAX_FILL_ERROR_MILLIS);
-      Serial.println(startFillTime + MAX_FILL_ERROR_MILLIS);
       closeWaterValve();
       doSystemErrorLoop();
     }
@@ -103,6 +123,9 @@ void doFill() {
 
 }
 
+//--------------------------------------------------------------------------------------------------------------------------
+// this method is called automatically by arduino repeatedly after setup()
+//
 void loop() {
 
   unsigned long time = millis();
