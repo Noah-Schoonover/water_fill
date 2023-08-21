@@ -1,0 +1,6 @@
+{
+    "sketch": "water_fill.ino",
+    "configuration": "cpu=16MHzatmega32U4",
+    "board": "SparkFun:avr:promicro",
+    "port": "COM9"
+}
