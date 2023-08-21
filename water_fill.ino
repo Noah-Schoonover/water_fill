@@ -63,10 +63,13 @@ void closeWaterValve() {
 // the loop quickly cycles the power on the sensor to flash the sensor LED as an ERROR indicator
 //
 void doSystemErrorLoop() {
-  closeWaterValve();
+
+  closeWaterValve(); // duh
+
   while(true) {
     delay(500);
     Serial.println("ERROR");
+
     digitalWrite(RED_LED, HIGH);
     enableWaterSensor();
 
@@ -79,14 +82,15 @@ void doSystemErrorLoop() {
     digitalWrite(RED_LED, LOW);
     disableWaterSensor();
   }
+
 }
 
 //--------------------------------------------------------------------------------------------------------------------------
 // helper method to write the sensor value after reading it
 //
 int readWaterSensor() {
-  int value = analogRead(WATER_SENSOR_SIGNAL_PIN); // read the analog value from sensor
-  Serial.print("Sensor value: "); // output sensor value
+  int value = analogRead(WATER_SENSOR_SIGNAL_PIN);
+  Serial.print("Sensor value: ");
   Serial.println(value);
   return value;
 }
@@ -104,13 +108,13 @@ void doFill() {
   while (waterSensorValue < WATER_STOP_FILL_THRESHOLD) {
 
     delay(FILL_CHECK_SENSOR_INTERVAL_MILLIS);
+    
     unsigned long time = millis();
     Serial.print("fill time: ");
     Serial.println(time - startFillTime);
 
     if (time > startFillTime + MAX_FILL_ERROR_MILLIS) {
       Serial.println("ERROR - MAX FILL TIME REACHED.");
-      closeWaterValve();
       doSystemErrorLoop();
     }
 
